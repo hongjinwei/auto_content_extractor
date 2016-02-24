@@ -29,13 +29,20 @@ public class MdTextExtractor {
 	private final static String _titlePattern = "<title>(.*?)</title>";
 
 	/** The Constant _titleRegexPattern. */
-	private final static Pattern _titleRegexPattern = Pattern.compile(_titlePattern, Pattern.CANON_EQ | Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+	private final static Pattern _titleRegexPattern = Pattern.compile(_titlePattern, Pattern.CANON_EQ | Pattern.DOTALL
+			| Pattern.CASE_INSENSITIVE);
 
 	/** The _title. */
 	private String _title = "";
 
 	/** The _text. */
 	private String _text = "";
+
+	/**
+	 * after calculation, if the context length is less than _text_len, we
+	 * regard it as invalid page
+	 */
+	private int _text_len = 30;
 
 	/**
 	 * Sets the block.
@@ -129,10 +136,14 @@ public class MdTextExtractor {
 			return false;
 		}
 
-		String regEx = "^(http|https|ftp)\\://([a-zA-Z0-9\\.\\-]+(\\:[a-zA-" + "Z0-9\\.&%\\$\\-]+)*@)?((25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{"
-				+ "2}|[1-9]{1}[0-9]{1}|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}" + "[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|"
-				+ "[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-" + "4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])|([a-zA-Z0"
-				+ "-9\\-]+\\.)*[a-zA-Z0-9\\-]+\\.[a-zA-Z]{2,4})(\\:[0-9]+)?(/" + "[a-zA-Z0-9\\.\\,\\?\\'\\\\/\\+&%\\$\\=~_\\-@]*)*$";
+		String regEx = "^(http|https|ftp)\\://([a-zA-Z0-9\\.\\-]+(\\:[a-zA-"
+				+ "Z0-9\\.&%\\$\\-]+)*@)?((25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{"
+				+ "2}|[1-9]{1}[0-9]{1}|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}"
+				+ "[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|"
+				+ "[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-"
+				+ "4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])|([a-zA-Z0"
+				+ "-9\\-]+\\.)*[a-zA-Z0-9\\-]+\\.[a-zA-Z]{2,4})(\\:[0-9]+)?(/"
+				+ "[a-zA-Z0-9\\.\\,\\?\\'\\\\/\\+&%\\$\\=~_\\-@]*)*$";
 		Pattern p = Pattern.compile(regEx);
 		Matcher matcher = p.matcher(url);
 		System.out.println(matcher.matches());
@@ -177,9 +188,11 @@ public class MdTextExtractor {
 
 		// 如果两块只差两个空行，并且两块包含文字均较多，则进行块合并，以弥补单纯抽取最大块的缺点
 		for (int i = 1; i < textList.size(); i++) {
-			if (textBeginList.get(i) == textEndList.get(i - 1) + 1 && textEndList.get(i) > textBeginList.get(i) + _block
+			if (textBeginList.get(i) == textEndList.get(i - 1) + 1
+					&& textEndList.get(i) > textBeginList.get(i) + _block
 					&& textList.get(i).replaceAll("\\s+", "").length() > 40) {
-				if (textEndList.get(i - 1) == textBeginList.get(i - 1) + _block && textList.get(i - 1).replaceAll("\\s+", "").length() < 40) {
+				if (textEndList.get(i - 1) == textBeginList.get(i - 1) + _block
+						&& textList.get(i - 1).replaceAll("\\s+", "").length() < 40) {
 					continue;
 				}
 				textList.set(i - 1, textList.get(i - 1) + textList.get(i));
@@ -201,7 +214,7 @@ public class MdTextExtractor {
 		}
 
 		// 最长块长度小于100，归为非主题型网页
-		if (result.replaceAll("\\s+", "").length() < 100)
+		if (result.replaceAll("\\s+", "").length() < _text_len)
 			_text = "*推测您提供的网页为非主题型网页，目前暂不处理！:-)";
 		else
 			_text = result;
@@ -275,7 +288,8 @@ public class MdTextExtractor {
 		// 删除上下存在两个空行的文字行
 		for (int i = 0; i + 4 < lines.size(); i++) {
 			if (indexDistribution.get(i) == 0 && indexDistribution.get(i + 1) == 0 && indexDistribution.get(i + 2) > 0
-					&& indexDistribution.get(i + 2) < 40 && indexDistribution.get(i + 3) == 0 && indexDistribution.get(i + 4) == 0) {
+					&& indexDistribution.get(i + 2) < 40 && indexDistribution.get(i + 3) == 0
+					&& indexDistribution.get(i + 4) == 0) {
 				// System.out.println("line:" + lines.get(i+2));
 				lines.set(i + 2, "");
 				indexDistribution.set(i + 2, 0);
@@ -372,7 +386,9 @@ public class MdTextExtractor {
 		// http://www.ifanr.com/15876
 
 		MdTextExtractor te = new MdTextExtractor();
-		te.extractURL("http://www.techweb.com.cn/news/2010-08-11/659082.shtml");
+		String u = "http://news.sina.com.cn/pl/ch/2015-09-15/doc-ifxhupin3577373.shtml";
+//		te.extractURL("http://dpaper.sxcm.net/sxdsb/html/2015-09/15/content_1079104.htm");
+		te.extractURL(u);
 		System.out.println(te.getText());
 	}
 
